@@ -1,8 +1,7 @@
 rm(list = ls())
 
-raw <- openxlsx::read.xlsx(
-  "data/raw/Green python Morelia viridis, Cape York Australia/points.xlsx",
-  sheet = 1
+raw <- utils::read.csv(
+  "data/processed/misc/points.csv"
 )
 raw <- raw |>
   dplyr::mutate(
