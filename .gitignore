@@ -47,3 +47,60 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# data
+data/
+
+## ---------------------------------------------------------
+## FILE GEODATABASES
+## These are folders containing binary lock/index files.
+## Never partially track a .gdb — always ignore wholesale.
+## ---------------------------------------------------------
+*.gdb/
+*.mdb
+*.sde
+
+## ---------------------------------------------------------
+## ARCGIS PRO PROJECT CLUTTER
+## Caches, locks, backups, and index files ArcGIS Pro
+## generates automatically — never useful to version.
+## ---------------------------------------------------------
+*.aprx.bak
+*.atbx.bak
+*.lock
+*.ddsi
+*.cdf
+*.tbxLock
+*.sr.lock
+*.aprx.xml
+ImageCache/
+Index/
+*.backups/
+GDB/
+*.gws
+*.gwl
+*.mxd.xml
+*.lyrx.bak
+
+# ArcGIS Pro auto-generated thumbnails/metadata
+*.aprx.thmb
+*.esriaddinx
+
+## ---------------------------------------------------------
+## OS CLUTTER
+## ---------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## ---------------------------------------------------------
+## LOGS / TEMP
+## ---------------------------------------------------------
+*.log
+*.tmp
+*~
