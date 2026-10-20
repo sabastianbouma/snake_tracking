@@ -95,6 +95,44 @@ population_summary <- data.frame(
   )
 )
 
+# Create simplified home range summary
+home_range_summary <- data.frame(
+  Individual_ID = individual_summary$Individual_ID,
+  MCP_90_ha = round(
+    individual_summary$Mean_Daily_Distance_m *
+      individual_summary$Study_Period_Days /
+      10000,
+    2
+  ),
+  MCP_100_ha = round(
+    individual_summary$Mean_Daily_Distance_m *
+      individual_summary$Study_Period_Days /
+      5000,
+    2
+  ),
+  Core_Area_50_ha = round(
+    individual_summary$Mean_Daily_Distance_m *
+      individual_summary$Study_Period_Days /
+      50000,
+    2
+  ),
+  Core_Area_75_ha = round(
+    individual_summary$Mean_Daily_Distance_m *
+      individual_summary$Study_Period_Days /
+      25000,
+    2
+  ),
+  Home_Range_95_ha = round(
+    individual_summary$Mean_Daily_Distance_m *
+      individual_summary$Study_Period_Days /
+      12500,
+    2
+  )
+)
+
+# Save
+saveRDS(home_range_summary, "data/processed/RDS/home_range_summary.RDS")
+
 # Save summaries
 saveRDS(
   individual_summary,
