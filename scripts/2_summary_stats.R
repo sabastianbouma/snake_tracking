@@ -95,43 +95,77 @@ population_summary <- data.frame(
   )
 )
 
-# Create simplified home range summary
-home_range_summary <- data.frame(
-  Individual_ID = individual_summary$Individual_ID,
-  MCP_90_ha = round(
-    individual_summary$Mean_Daily_Distance_m *
-      individual_summary$Study_Period_Days /
-      10000,
-    2
-  ),
-  MCP_100_ha = round(
-    individual_summary$Mean_Daily_Distance_m *
-      individual_summary$Study_Period_Days /
-      5000,
-    2
-  ),
-  Core_Area_50_ha = round(
-    individual_summary$Mean_Daily_Distance_m *
-      individual_summary$Study_Period_Days /
-      50000,
-    2
-  ),
-  Core_Area_75_ha = round(
-    individual_summary$Mean_Daily_Distance_m *
-      individual_summary$Study_Period_Days /
-      25000,
-    2
-  ),
-  Home_Range_95_ha = round(
-    individual_summary$Mean_Daily_Distance_m *
-      individual_summary$Study_Period_Days /
-      12500,
-    2
-  )
+pythons_ade <- move::move2ade(pythons_prj)
+
+mcp_90 <- adehabitatHR::mcp(
+  pythons_ade,
+  percent = 90,
+  unin = "m",
+  unout = "ha"
+)
+mcp_100 <- adehabitatHR::mcp(
+  pythons_ade,
+  percent = 100,
+  unin = "m",
+  unout = "ha"
 )
 
-# Save
-saveRDS(home_range_summary, "data/processed/RDS/home_range_summary.RDS")
+mcp_summary <- purrr::map_dfr(unique(pythons_prj@trackId), function(animal) {
+  animal_id <- str_extract(animal, "\\d+")
+  mcp_90_val <- mcp_90[mcp_90$id == animal, ]$area
+  mcp_100_val <- mcp_100[mcp_100$id == animal, ]$area
+
+  if (length(mcp_90_val) == 0) {
+    mcp_90_val <- NA
+  }
+  if (length(mcp_100_val) == 0) {
+    mcp_100_val <- NA
+  }
+
+  data.frame(
+    Individual_ID = animal_id,
+    MCP_90_ha = round(mcp_90_val, 2),
+    MCP_100_ha = round(mcp_100_val, 2)
+  )
+})
+
+kern <- adehabitatHR::kernelUD(pythons_ade, h = "href")
+kern_area <- adehabitatHR::kernel.area(
+  kern,
+  percent = c(50, 75, 95),
+  unin = "m",
+  unout = "ha"
+)
+kernel_summary <- purrr::map_dfr(
+  unique(pythons_prj@trackId),
+  function(animal) {
+    animal_id <- str_extract(animal, "\\d+")
+    Core_Area_50_ha <- kern_area['50', animal]
+    Core_Area_75_ha <- kern_area['75', animal]
+    Home_Range_95_ha <- kern_area['95', animal]
+
+    if (length(Core_Area_50_ha) == 0) {
+      Core_Area_50_ha <- NA
+    }
+    if (length(Core_Area_75_ha) == 0) {
+      Core_Area_75_ha <- NA
+    }
+    if (length(Home_Range_95_ha) == 0) {
+      Home_Range_95_ha <- NA
+    }
+    data.frame(
+      Individual_ID = animal_id,
+      Core_Area_50_ha = round(Core_Area_50_ha, 2),
+      Core_Area_75_ha = round(Core_Area_75_ha, 2),
+      Home_Range_95_ha = round(Home_Range_95_ha, 2)
+    )
+  }
+)
+
+# 3. Combine home range estimates
+home_range_summary <- mcp_summary |>
+  full_join(kernel_summary, by = "Individual_ID") |>
+  arrange(as.numeric(Individual_ID))
 
 # Save summaries
 saveRDS(
@@ -139,3 +173,5 @@ saveRDS(
   "data/processed/RDS/individual_movement_summary.RDS"
 )
 saveRDS(population_summary, "data/processed/RDS/population_summary.RDS")
+
+saveRDS(home_range_summary, "data/processed/RDS/home_range_summary.RDS")
