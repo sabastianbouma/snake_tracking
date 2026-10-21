@@ -79,17 +79,17 @@ sf::st_write(
 )
 
 # KDE
-kde_50 <- adehabitatHR::getverticeshr(kde, percent = 50)
-kde_50$percentage <- 50
-kde_75 <- adehabitatHR::getverticeshr(kde, percent = 75)
-kde_75$percentage <- 75
-kde_90 <- adehabitatHR::getverticeshr(kde, percent = 90)
-kde_90$percentage <- 90
-kde_poly <- rbind(kde_50, kde_75, kde_90)
-kde_poly$fid <- seq_len(nrow(kde_poly))
-
-kde_sf <- sf::st_as_sf(kde_poly) |>
-  sf::st_transform(crs = srid)
+kde_sf <- purrr::map_dfr(
+  c(50, 75, 90),
+  ~ {
+    poly <- adehabitatHR::getverticeshr(kde, percent = .x)
+    poly_sf <- sf::st_as_sf(poly)
+    poly_sf$percentage <- .x
+    poly_sf
+  }
+) |>
+  sf::st_transform(crs = srid) |>
+  dplyr::mutate(fid = dplyr::row_number())
 
 if (DBI::dbExistsTable(db_con, "home_ranges_kernel")) {
   DBI::dbExecute(db_con, "DROP TABLE home_ranges_kernel;")
