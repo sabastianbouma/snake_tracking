@@ -2,21 +2,10 @@ rm(list = ls())
 
 # Load preprocessed data
 df <- readRDS("data/processed/RDS/points_df.RDS")
-
-# Create Move objects
-pythons <- move::move(
-  x = df$long,
-  y = df$lat,
-  time = df$timestamp,
-  proj = "+proj=longlat +ellps=GRS80 +no_defs",
-  animal = as.numeric(df$ind_ident),
-  data = df
-)
-
-pythons_prj <- sp::spTransform(
-  pythons,
-  "+proj=utm +zone=54 +south +datum=WGS84 +units=m +no_defs"
-)
+pythons_prj <- readRDS("data/processed/RDS/pythons_prj.RDS")
+mcp_90 <- readRDS("data/processed/RDS/mcp_90.RDS")
+mcp_100 <- readRDS("data/processed/RDS/mcp_100.RDS")
+kde_area <- readRDS("data/processed/RDS/kde_area.RDS")
 
 # Calculate distance and speed
 distance <- move::distance(pythons_prj)
@@ -95,23 +84,8 @@ population_summary <- data.frame(
   )
 )
 
-pythons_ade <- move::move2ade(pythons_prj)
-
-mcp_90 <- adehabitatHR::mcp(
-  pythons_ade,
-  percent = 90,
-  unin = "m",
-  unout = "ha"
-)
-mcp_100 <- adehabitatHR::mcp(
-  pythons_ade,
-  percent = 100,
-  unin = "m",
-  unout = "ha"
-)
-
 mcp_summary <- purrr::map_dfr(unique(pythons_prj@trackId), function(animal) {
-  animal_id <- str_extract(animal, "\\d+")
+  animal_id <- stringr::str_extract(animal, "\\d+")
   mcp_90_val <- mcp_90[mcp_90$id == animal, ]$area
   mcp_100_val <- mcp_100[mcp_100$id == animal, ]$area
 
@@ -129,20 +103,13 @@ mcp_summary <- purrr::map_dfr(unique(pythons_prj@trackId), function(animal) {
   )
 })
 
-kern <- adehabitatHR::kernelUD(pythons_ade, h = "href")
-kern_area <- adehabitatHR::kernel.area(
-  kern,
-  percent = c(50, 75, 95),
-  unin = "m",
-  unout = "ha"
-)
-kernel_summary <- purrr::map_dfr(
+kde_summary <- purrr::map_dfr(
   unique(pythons_prj@trackId),
   function(animal) {
-    animal_id <- str_extract(animal, "\\d+")
-    Core_Area_50_ha <- kern_area['50', animal]
-    Core_Area_75_ha <- kern_area['75', animal]
-    Home_Range_95_ha <- kern_area['95', animal]
+    animal_id <- stringr::str_extract(animal, "\\d+")
+    Core_Area_50_ha <- kde_area['50', animal]
+    Core_Area_75_ha <- kde_area['75', animal]
+    Home_Range_95_ha <- kde_area['95', animal]
 
     if (length(Core_Area_50_ha) == 0) {
       Core_Area_50_ha <- NA
@@ -164,8 +131,8 @@ kernel_summary <- purrr::map_dfr(
 
 # 3. Combine home range estimates
 home_range_summary <- mcp_summary |>
-  full_join(kernel_summary, by = "Individual_ID") |>
-  arrange(as.numeric(Individual_ID))
+  dplyr::full_join(kde_summary, by = "Individual_ID") |>
+  dplyr::arrange(as.numeric(Individual_ID))
 
 # Save summaries
 saveRDS(

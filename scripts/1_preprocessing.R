@@ -35,4 +35,20 @@ df <- df |>
     )
   )
 
+# Create Move objects
+pythons <- move::move(
+  x = df$long,
+  y = df$lat,
+  time = df$timestamp,
+  proj = "+proj=longlat +ellps=GRS80 +no_defs",
+  animal = as.numeric(df$ind_ident),
+  data = df
+)
+
+pythons_prj <- sp::spTransform(
+  pythons,
+  "+proj=utm +zone=54 +south +datum=WGS84 +units=m +no_defs"
+)
+
 saveRDS(df, "data/processed/RDS/points_df.RDS")
+saveRDS(pythons_prj, "data/processed/RDS/pythons_prj.RDS")
