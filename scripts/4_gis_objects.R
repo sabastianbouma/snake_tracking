@@ -101,4 +101,56 @@ sf::st_write(
   layer_options = c("OVERWRITE=YES")
 )
 
+# BBMM
+bbmm <- readRDS("data/processed/RDS/bbmm.RDS")
+
+bbmm_ud <- move::getVolumeUD(bbmm)
+
+# Get the names of all layers in bbmm_ud
+layer_names <- names(bbmm_ud)
+
+bbmm_sf <- purrr::map_dfr(
+  c(50, 75, 90),
+  ~ {
+    # Create a list to store contours for each layer
+    contours_list <- purrr::map(layer_names, function(layer_name) {
+      UDmypy_conts <- raster::rasterToContour(
+        bbmm_ud[[layer_name]],
+        levels = seq(0, 1, by = 0.05)
+      )
+      mycontours <- sf::st_as_sf(UDmypy_conts)
+      my_contours_poly <- sf::st_polygonize(mycontours)
+      my_contours_subset <- raster::subset(my_contours_poly, level == .x / 100)
+
+      my_contours_dissolved <- sf::st_union(my_contours_subset)
+
+      my_contours_extracted <- sf::st_collection_extract(
+        my_contours_dissolved,
+        'POLYGON'
+      )
+
+      sf::st_sf(
+        percentage = .x,
+        id = stringr::str_extract(layer_name, "\\d+"),
+        geometry = my_contours_extracted
+      )
+    })
+
+    # Combine contours from all layers into a single data frame
+    dplyr::bind_rows(contours_list)
+  }
+) |>
+  sf::st_transform(crs = srid) |>
+  dplyr::mutate(fid = dplyr::row_number())
+
+if (DBI::dbExistsTable(db_con, "home_ranges_bbmm")) {
+  DBI::dbExecute(db_con, "DROP TABLE home_ranges_bbmm;")
+}
+sf::st_write(
+  bbmm_sf,
+  db_con,
+  "home_ranges_bbmm",
+  layer_options = c("OVERWRITE=YES")
+)
+
 DBI::dbDisconnect(db_con)

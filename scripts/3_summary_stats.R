@@ -6,6 +6,7 @@ pythons_prj <- readRDS("data/processed/RDS/pythons_prj.RDS")
 mcp_90 <- readRDS("data/processed/RDS/mcp_90.RDS")
 mcp_100 <- readRDS("data/processed/RDS/mcp_100.RDS")
 kde_area <- readRDS("data/processed/RDS/kde_area.RDS")
+bbmm <- readRDS("data/processed/RDS/bbmm.RDS")
 
 # Calculate distance and speed
 distance <- move::distance(pythons_prj)
