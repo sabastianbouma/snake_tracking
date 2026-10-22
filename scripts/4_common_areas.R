@@ -43,25 +43,14 @@ all_intersections <- sf::st_intersection(bbmm_sf) |>
 # For each resulting geometry, find which individuals overlap it
 common_areas <- all_intersections |>
   dplyr::mutate(
-    snake_ids = purrr::map(geometry, function(g) {
-      # browser()
-      idx <- which(sf::st_intersects(g, bbmm_sf, sparse = FALSE)[1, ])
-      unique(bbmm_sf$id[idx])
-    }),
+    snake_ids = purrr::map(origins, function(idx) bbmm_sf$id[idx]),
     n_snakes = purrr::map_int(snake_ids, length),
     area_ha = as.numeric(sf::st_area(geometry)) / 10000
   ) |>
   dplyr::filter(area_ha > 0) |>
   dplyr::mutate(snake_ids = sapply(snake_ids, paste, collapse = ",")) |>
-  dplyr::mutate(origins = sapply(origins, paste, collapse = ",")) # |>
-# dplyr::select(-origins)
-
-common_areas |> dplyr::filter(snake_ids %in% '10,17,20')
-# extracted <- sf::st_collection_extract(
-#   common_areas,
-#   'POLYGON'
-# )
-
-# extracted$fid <- seq_len(nrow(extracted))
+  sf::st_collection_extract(
+    'POLYGON'
+  )
 
 saveRDS(common_areas, "data/processed/RDS/common_areas.RDS")
