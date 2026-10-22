@@ -3,10 +3,10 @@ rm(list = ls())
 # Load preprocessed data
 df <- readRDS("data/processed/RDS/points_df.RDS")
 pythons_prj <- readRDS("data/processed/RDS/pythons_prj.RDS")
-mcp_90 <- readRDS("data/processed/RDS/mcp_90.RDS")
-mcp_100 <- readRDS("data/processed/RDS/mcp_100.RDS")
+mcp_90_model <- readRDS("data/processed/RDS/mcp_90.RDS")
+mcp_100_model <- readRDS("data/processed/RDS/mcp_100.RDS")
 kde_area <- readRDS("data/processed/RDS/kde_area.RDS")
-bbmm <- readRDS("data/processed/RDS/bbmm.RDS")
+bbmm_ud <- readRDS("data/processed/RDS/bbmm_ud.RDS")
 
 # Calculate distance and speed
 distance <- move::distance(pythons_prj)
@@ -85,54 +85,62 @@ population_summary <- data.frame(
   )
 )
 
-mcp_summary <- purrr::map_dfr(unique(pythons_prj@trackId), function(animal) {
-  animal_id <- stringr::str_extract(animal, "\\d+")
-  mcp_90_val <- mcp_90[mcp_90$id == animal, ]$area
-  mcp_100_val <- mcp_100[mcp_100$id == animal, ]$area
-
-  if (length(mcp_90_val) == 0) {
-    mcp_90_val <- NA
-  }
-  if (length(mcp_100_val) == 0) {
-    mcp_100_val <- NA
-  }
-
-  data.frame(
-    Individual_ID = animal_id,
-    MCP_90_ha = round(mcp_90_val, 2),
-    MCP_100_ha = round(mcp_100_val, 2)
-  )
-})
-
-kde_summary <- purrr::map_dfr(
+home_range_summary <- purrr::map_dfr(
   unique(pythons_prj@trackId),
   function(animal) {
     animal_id <- stringr::str_extract(animal, "\\d+")
-    Core_Area_50_ha <- kde_area['50', animal]
-    Core_Area_75_ha <- kde_area['75', animal]
-    Home_Range_95_ha <- kde_area['95', animal]
+    mcp_90 <- mcp_90_model[mcp_90_model$id == animal, ]$area
+    mcp_100 <- mcp_100_model[mcp_100_model$id == animal, ]$area
 
-    if (length(Core_Area_50_ha) == 0) {
-      Core_Area_50_ha <- NA
+    kde_50 <- kde_area['50', animal]
+    kde_75 <- kde_area['75', animal]
+    kde_95 <- kde_area['95', animal]
+    bbmm_50 <- bbmm_ud[[animal]] |>
+      raster::rasterToPolygons(fun = function(x) x <= 0.50) |>
+      sf::st_as_sf() |>
+      sf::st_area() |>
+      sum()
+    bbmm_75 <- bbmm_ud[[animal]] |>
+      raster::rasterToPolygons(fun = function(x) x <= 0.75) |>
+      sf::st_as_sf() |>
+      sf::st_area() |>
+      sum()
+    bbmm_95 <- bbmm_ud[[animal]] |>
+      raster::rasterToPolygons(fun = function(x) x <= 0.95) |>
+      sf::st_as_sf() |>
+      sf::st_area() |>
+      sum()
+
+    # List of variables to check
+    variables_to_check <- c(
+      "kde_50",
+      "kde_75",
+      "kde_95",
+      "mcp_90",
+      "mcp_100",
+      "bbmm_50",
+      "bbmm_75",
+      "bbmm_95"
+    )
+
+    # Assign NA if length is 0
+    for (var in variables_to_check) {
+      assign(var, ifelse(length(get(var)) == 0, NA, get(var)))
     }
-    if (length(Core_Area_75_ha) == 0) {
-      Core_Area_75_ha <- NA
-    }
-    if (length(Home_Range_95_ha) == 0) {
-      Home_Range_95_ha <- NA
-    }
+
     data.frame(
       Individual_ID = animal_id,
-      Core_Area_50_ha = round(Core_Area_50_ha, 2),
-      Core_Area_75_ha = round(Core_Area_75_ha, 2),
-      Home_Range_95_ha = round(Home_Range_95_ha, 2)
+      MCP_90 = round(mcp_90, 2),
+      MCP_100 = round(mcp_100, 2),
+      KDE_50 = round(kde_50, 2),
+      KDE_75 = round(kde_75, 2),
+      KDE_95 = round(kde_95, 2),
+      BBMM_50 = round(bbmm_50 / 10000, 2), # Convert from m^2 to ha
+      BBMM_75 = round(bbmm_75 / 10000, 2), # Convert from m^2 to ha
+      BBMM_95 = round(bbmm_95 / 10000, 2) # Convert from m^2 to ha
     )
   }
-)
-
-# 3. Combine home range estimates
-home_range_summary <- mcp_summary |>
-  dplyr::full_join(kde_summary, by = "Individual_ID") |>
+) |>
   dplyr::arrange(as.numeric(Individual_ID))
 
 # Save summaries
