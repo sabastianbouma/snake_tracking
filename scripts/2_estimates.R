@@ -31,12 +31,15 @@ bbmm <- move::brownian.bridge.dyn(
   pythons_prj,
   raster = 10,
   location.error = 19,
-  margin = 5,
-  window.size = 21
+  margin = 3,
+  window.size = 7
 )
+
+bbmm_ud <- move::getVolumeUD(bbmm)
 
 saveRDS(mcp_90, "data/processed/RDS/mcp_90.RDS")
 saveRDS(mcp_100, "data/processed/RDS/mcp_100.RDS")
 saveRDS(kde, "data/processed/RDS/kde.RDS")
 saveRDS(kde_area, "data/processed/RDS/kde_area.RDS")
 saveRDS(bbmm, "data/processed/RDS/bbmm.RDS")
+saveRDS(bbmm_ud, "data/processed/RDS/bbmm_ud.RDS")
