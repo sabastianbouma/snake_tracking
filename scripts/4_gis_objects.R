@@ -7,6 +7,7 @@ mcp_90 <- readRDS("data/processed/RDS/mcp_90.RDS")
 mcp_100 <- readRDS("data/processed/RDS/mcp_100.RDS")
 kde <- readRDS("data/processed/RDS/kde.RDS")
 bbmm_ud <- readRDS("data/processed/RDS/bbmm_ud.RDS")
+common_areas <- readRDS("data/processed/RDS/common_areas.RDS")
 
 # Connect to PostgreSQL/PostGIS
 db_con <- DBI::dbConnect(
@@ -148,6 +149,26 @@ sf::st_write(
   db_con,
   "home_ranges_bbmm",
   layer_options = c("OVERWRITE=YES")
+)
+
+# Add FID for ArcGIS compatibility
+common_areas$fid <- seq_len(nrow(common_areas))
+common_areas$id <- seq_len(nrow(common_areas))
+
+# Write to PostGIS
+if (DBI::dbExistsTable(db_con, "common_areas")) {
+  DBI::dbExecute(db_con, "DROP TABLE common_areas;")
+}
+sf::st_write(
+  common_areas,
+  db_con,
+  "common_areas",
+  layer_options = c("OVERWRITE=YES")
+)
+
+test <- DBI::dbGetQuery(
+  db_con,
+  "SELECT ST_GeometryType(geometry), COUNT(*) FROM common_areas GROUP BY ST_GeometryType(geometry);"
 )
 
 DBI::dbDisconnect(db_con)
