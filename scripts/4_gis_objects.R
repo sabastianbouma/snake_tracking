@@ -6,6 +6,7 @@ pythons_prj <- base::readRDS("data/processed/RDS/pythons_prj.RDS")
 mcp_90 <- readRDS("data/processed/RDS/mcp_90.RDS")
 mcp_100 <- readRDS("data/processed/RDS/mcp_100.RDS")
 kde <- readRDS("data/processed/RDS/kde.RDS")
+bbmm_ud <- readRDS("data/processed/RDS/bbmm_ud.RDS")
 
 # Connect to PostgreSQL/PostGIS
 db_con <- DBI::dbConnect(
@@ -102,20 +103,16 @@ sf::st_write(
 )
 
 # BBMM
-bbmm <- readRDS("data/processed/RDS/bbmm.RDS")
-
-bbmm_ud <- move::getVolumeUD(bbmm)
-
 # Get the names of all layers in bbmm_ud
-layer_names <- names(bbmm_ud)
+animal_ids <- names(bbmm_ud)
 
 bbmm_sf <- purrr::map_dfr(
-  c(50, 75, 90),
+  c(50, 75, 95),
   ~ {
     # Create a list to store contours for each layer
-    contours_list <- purrr::map(layer_names, function(layer_name) {
+    contours_list <- purrr::map(animal_ids, function(animal) {
       UDmypy_conts <- raster::rasterToContour(
-        bbmm_ud[[layer_name]],
+        bbmm_ud[[animal]],
         levels = seq(0, 1, by = 0.05)
       )
       mycontours <- sf::st_as_sf(UDmypy_conts)
@@ -131,7 +128,7 @@ bbmm_sf <- purrr::map_dfr(
 
       sf::st_sf(
         percentage = .x,
-        id = stringr::str_extract(layer_name, "\\d+"),
+        id = stringr::str_extract(animal, "\\d+"),
         geometry = my_contours_extracted
       )
     })
