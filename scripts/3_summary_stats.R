@@ -21,6 +21,13 @@ individual_summary <- purrr::map_dfr(
     step_distances <- move::distance(m)
     step_speeds <- move::speed(m)
     step_dates <- as.Date(move::timestamps(m)[-length(m)])
+    # Calculate time differences in seconds
+    browser()
+    time_diffs <- as.numeric(difftime(
+      move::timestamps(m)[-1],
+      move::timestamps(m)[-length(m)],
+      units = "hours"
+    ))
 
     # Calculate daily metrics
     daily_movement <- data.frame(
@@ -58,7 +65,11 @@ individual_summary <- purrr::map_dfr(
         2
       ),
       Mean_Speed_ms = round(mean(step_speeds, na.rm = TRUE), 4),
-      Max_Speed_ms = round(max(step_speeds, na.rm = TRUE), 4)
+      Max_Speed_ms = round(max(step_speeds, na.rm = TRUE), 4),
+      Mean_Time_Between_Observations_h = round(
+        mean(time_diffs, na.rm = TRUE),
+        0
+      ) # New statistic
     )
   }
 )
@@ -72,7 +83,8 @@ population_summary <- data.frame(
     "Mean Study Period (days)",
     "Overall Mean Step Distance (m)",
     "Overall Mean Daily Distance (m)",
-    "Overall Mean Speed (m/s)"
+    "Overall Mean Speed (m/s)",
+    "Overall Mean Time Between Observations (h)"
   ),
   Value = c(
     dplyr::n_distinct(pythons_prj@trackId),
@@ -81,13 +93,15 @@ population_summary <- data.frame(
     round(mean(individual_summary$Study_Period_Days), 1),
     round(mean(individual_summary$Mean_Step_Distance_m), 2),
     round(mean(individual_summary$Mean_Daily_Distance_m), 2),
-    round(mean(individual_summary$Mean_Speed_ms), 4)
+    round(mean(individual_summary$Mean_Speed_ms), 4),
+    round(mean(individual_summary$Mean_Time_Between_Observations_h), 0)
   )
 )
 
 home_range_summary <- purrr::map_dfr(
   unique(pythons_prj@trackId),
   function(animal) {
+    animal <- as.character(animal)
     animal_id <- stringr::str_extract(animal, "\\d+")
     mcp_90 <- mcp_90_model[mcp_90_model$id == animal, ]$area
     mcp_100 <- mcp_100_model[mcp_100_model$id == animal, ]$area
@@ -151,3 +165,5 @@ saveRDS(
 saveRDS(population_summary, "data/processed/RDS/population_summary.RDS")
 
 saveRDS(home_range_summary, "data/processed/RDS/home_range_summary.RDS")
+
+clipr::write_clip(population_summary)
