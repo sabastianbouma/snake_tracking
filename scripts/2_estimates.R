@@ -19,7 +19,7 @@ mcp_100 <- adehabitatHR::mcp(
   unout = "ha"
 )
 
-kde <- adehabitatHR::kernelUD(pythons_ade, h = "href")
+kde <- adehabitatHR::kernelUD(pythons_ade, h = "href", extent = 1.5)
 kde_area <- adehabitatHR::kernel.area(
   kde,
   percent = c(50, 75, 95),
