@@ -81,7 +81,7 @@ sf::st_write(
 
 # KDE
 kde_sf <- purrr::map_dfr(
-  c(50, 75, 90),
+  c(50, 75, 95),
   ~ {
     poly <- adehabitatHR::getverticeshr(kde, percent = .x)
     poly_sf <- sf::st_as_sf(poly)
