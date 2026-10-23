@@ -22,7 +22,6 @@ individual_summary <- purrr::map_dfr(
     step_speeds <- move::speed(m)
     step_dates <- as.Date(move::timestamps(m)[-length(m)])
     # Calculate time differences in seconds
-    browser()
     time_diffs <- as.numeric(difftime(
       move::timestamps(m)[-1],
       move::timestamps(m)[-length(m)],
@@ -165,5 +164,3 @@ saveRDS(
 saveRDS(population_summary, "data/processed/RDS/population_summary.RDS")
 
 saveRDS(home_range_summary, "data/processed/RDS/home_range_summary.RDS")
-
-clipr::write_clip(population_summary)
