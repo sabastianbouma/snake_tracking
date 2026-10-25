@@ -52,6 +52,7 @@ rsconnect/
 data/raw
 data/processed/GIS
 data/processed/RDS
+data/processed/images
 
 ## ---------------------------------------------------------
 ## FILE GEODATABASES
