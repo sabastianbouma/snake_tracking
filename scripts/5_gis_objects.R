@@ -8,6 +8,7 @@ mcp_100 <- readRDS("data/processed/RDS/mcp_100.RDS")
 kde <- readRDS("data/processed/RDS/kde.RDS")
 bbmm_ud <- readRDS("data/processed/RDS/bbmm_ud.RDS")
 common_areas <- readRDS("data/processed/RDS/common_areas.RDS")
+common_areas_kde <- readRDS("data/processed/RDS/common_areas_kde.RDS")
 
 # Connect to PostgreSQL/PostGIS
 db_con <- DBI::dbConnect(
@@ -104,7 +105,6 @@ sf::st_write(
 )
 
 # BBMM
-# Get the names of all layers in bbmm_ud
 animal_ids <- names(bbmm_ud)
 
 bbmm_sf <- purrr::map_dfr(
@@ -155,7 +155,6 @@ sf::st_write(
 common_areas$fid <- seq_len(nrow(common_areas))
 common_areas$id <- seq_len(nrow(common_areas))
 
-# Write to PostGIS
 if (DBI::dbExistsTable(db_con, "common_areas")) {
   DBI::dbExecute(db_con, "DROP TABLE common_areas;")
 }
@@ -166,9 +165,18 @@ sf::st_write(
   layer_options = c("OVERWRITE=YES")
 )
 
-test <- DBI::dbGetQuery(
+# Add FID for ArcGIS compatibility
+common_areas_kde$fid <- seq_len(nrow(common_areas_kde))
+common_areas_kde$id <- seq_len(nrow(common_areas_kde))
+
+if (DBI::dbExistsTable(db_con, "common_areas_kde")) {
+  DBI::dbExecute(db_con, "DROP TABLE common_areas_kde;")
+}
+sf::st_write(
+  common_areas_kde,
   db_con,
-  "SELECT ST_GeometryType(geometry), COUNT(*) FROM common_areas GROUP BY ST_GeometryType(geometry);"
+  "common_areas_kde",
+  layer_options = c("OVERWRITE=YES")
 )
 
 DBI::dbDisconnect(db_con)
