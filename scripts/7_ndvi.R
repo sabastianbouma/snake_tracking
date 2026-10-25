@@ -23,11 +23,21 @@ ndvi_stats <- terra::extract(
 ) |>
   dplyr::bind_cols(id = bbmm95_sf$id)
 
+# Aggregate to individual python level (mean NDVI per python)
+ndvi_stats <- ndvi_stats |>
+  dplyr::group_by(id) |>
+  dplyr::summarize(NDVI = mean(NDVI, na.rm = TRUE))
+
 # join to home_range_summary and correlate
 merged <- dplyr::left_join(
   home_range_summary,
   ndvi_stats,
   by = c("Individual_ID" = "id")
-)
+) |>
+  dplyr::left_join(
+    individual_summary |>
+      dplyr::select(Individual_ID, Study_Period_Days),
+    by = "Individual_ID"
+  )
 
 cor.test(merged$BBMM_95, merged$NDVI)
